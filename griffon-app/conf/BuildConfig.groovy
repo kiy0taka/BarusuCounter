@@ -120,7 +120,7 @@ griffon.project.dependency.resolution = {
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
     dependencies {
-        compile 'org.twitter4j:twitter4j-stream:2.2.4'
+        compile 'org.twitter4j:twitter4j-stream:2.2.5'
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
         // runtime 'mysql:mysql-connector-java:5.1.5'

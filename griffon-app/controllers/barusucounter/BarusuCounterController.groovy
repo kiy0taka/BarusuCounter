@@ -8,31 +8,59 @@ import javafx.application.Platform
 class BarusuCounterController {
     def model
     def view
+    def executor
+    def twitter
 
     void mvcGroupInit(Map args) {
+    }
+
+    def start = {
         def start = System.currentTimeMillis()
+        model.start = new Date(start)
         def list = new CopyOnWriteArrayList()
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay({
-            Platform.runLater {
+        executor = Executors.newSingleThreadScheduledExecutor()
+        executor.scheduleWithFixedDelay({
+            execAsync {
                 def sec = (System.currentTimeMillis() - start) / 1000
-                model.data.add(new Data(sec, list.size()))
-                if (sec > 7) {
-                    model.lower +=1
-                    model.upper += 1
+                int val = list.size()
+                model.data.add(new Data(sec, val))
+                model.max = Math.max(val, model.max)
+                if (model.scroll && sec > 7) {
+                    moveRight()
                 }
                 list.clear()
             }
         } as Runnable, 0, 1, TimeUnit.SECONDS)
-        new TwitterStreamFactory().instance.with {
-            addListener([onStatus:{list.add(it)}] as UserStreamAdapter); user('#sht')
+        twitter = new TwitterStreamFactory().instance
+        twitter.with {
+            addListener([onStatus:{ tweet ->
+                println "[${tweet.createdAt.format('HH:mm:ss')}] ${tweet.text}"
+                list.add(tweet)
+            }, onException: { e -> e.printStackTrace() }] as UserStreamAdapter);
+            filter(new FilterQuery().track(model.search))
         }
     }
 
-    // void mvcGroupDestroy() {
-    //    // this method is called when the group is destroyed
-    // }
+    def moveLeft = {
+        model.lower -= 1
+        model.upper -= 1
+    }
 
-    def anAction = { evt = null ->
-        // this is how you define an action closure that is called from a view
+    def moveRight = {
+        model.lower += 1
+        model.upper += 1
+    }
+
+    def pause = {
+        model.scroll = false
+    }
+
+    def resume = {
+        model.scroll = true
+    }
+
+    def stop = {
+        executor.shutdownNow()
+        twitter.shutdown()
     }
 }
